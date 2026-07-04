@@ -1,0 +1,21 @@
+[project]
+name = "deteccion-bloqueos"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "icrawler>=0.6.10",
+    "lxml>=6.1.1",
+    "matplotlib>=3.11.0",
+    "numpy>=2.4.6",
+    "opencv-python>=5.0.0.93",
+    "pillow>=12.3.0",
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.0",
+    "selenium>=4.45.0",
+    "torch>=2.12.1",
+    "torchvision>=0.27.1",
+    "ultralytics>=8.4.87",
+]
