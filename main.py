@@ -12,37 +12,45 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 BASE_DIR = Path(__file__).resolve().parent
-
-# Ruta al modelo entrenado (muévelo desde notebooks/ a models/)
-MODEL_PATH = BASE_DIR / "models" / "mejor_modelo_bloqueos.pth"
-
-# Carpeta donde se guardan las imágenes analizadas, separadas por resultado
+MODEL_BLOQUEOS_PATH = BASE_DIR / "models" / "mejor_modelo_bloqueos.pth"
+MODEL_PORTERO_PATH = BASE_DIR / "models" / "modelo_detector_calle.pth"
 CAPTURAS_DIR = BASE_DIR / "capturas"
 (CAPTURAS_DIR / "bloqueo").mkdir(parents=True, exist_ok=True)
 (CAPTURAS_DIR / "no_bloqueo").mkdir(parents=True, exist_ok=True)
+(CAPTURAS_DIR / "no_calle").mkdir(parents=True, exist_ok=True)
 
-# Mismo orden que detectó ImageFolder (alfabético): bloqueo=0, no_bloqueo=1
-CLASSES = ["bloqueo", "no_bloqueo"]
+CLASSES_BLOQUEOS = ["bloqueo", "no_bloqueo"]
+CLASSES_PORTERO = ["calle", "otros"]
+
+UMBRAL_PORTERO = 0.6
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def cargar_modelo() -> nn.Module:
-    if not MODEL_PATH.exists():
+def _cargar_resnet18(path: Path, num_classes: int) -> nn.Module:
+    if not path.exists():
         raise FileNotFoundError(
-            f"No se encontró el modelo en {MODEL_PATH}. "
-            f"Copia 'mejor_modelo_bloqueos.pth' a la carpeta 'models/'."
+            f"No se encontró el modelo en {path}. Copia el archivo .pth a la carpeta 'models/'."
         )
     modelo = models.resnet18(weights=None)
-    modelo.fc = nn.Linear(modelo.fc.in_features, len(CLASSES))
-    state_dict = torch.load(MODEL_PATH, map_location=device)
+    modelo.fc = nn.Linear(modelo.fc.in_features, num_classes)
+    state_dict = torch.load(path, map_location=device)
     modelo.load_state_dict(state_dict)
     modelo.to(device)
     modelo.eval()
     return modelo
 
 
-model = cargar_modelo()
+def cargar_modelo_bloqueos() -> nn.Module:
+    return _cargar_resnet18(MODEL_BLOQUEOS_PATH, len(CLASSES_BLOQUEOS))
+
+
+def cargar_modelo_portero() -> nn.Module:
+    return _cargar_resnet18(MODEL_PORTERO_PATH, len(CLASSES_PORTERO))
+
+
+model_bloqueos = cargar_modelo_bloqueos()
+model_portero = cargar_modelo_portero()
 
 transform = transforms.Compose(
     [
@@ -63,6 +71,15 @@ def index():
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 
+def _predecir(modelo: nn.Module, clases: list[str], img_t: torch.Tensor):
+    with torch.no_grad():
+        out = modelo(img_t)
+        probs = torch.softmax(out, dim=1)[0]
+        idx = int(probs.argmax().item())
+        confianza = float(probs[idx].item())
+    return clases[idx], confianza
+
+
 @app.post("/api/predict")
 async def predecir(file: UploadFile = File(...)):
     contenido = await file.read()
@@ -72,24 +89,34 @@ async def predecir(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="No se pudo leer la imagen enviada")
 
     img_t = transform(img).unsqueeze(0).to(device)
-
-    with torch.no_grad():
-        out = model(img_t)
-        probs = torch.softmax(out, dim=1)[0]
-        idx = int(probs.argmax().item())
-        confianza = float(probs[idx].item())
-
-    etiqueta = CLASSES[idx]
-
-    # Guardar la imagen analizada en capturas/<etiqueta>/
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_archivo = f"{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
-    ruta_guardado = CAPTURAS_DIR / etiqueta / nombre_archivo
+
+    etiqueta_portero, confianza_portero = _predecir(model_portero, CLASSES_PORTERO, img_t)
+
+    if etiqueta_portero == "otros" and confianza_portero >= UMBRAL_PORTERO:
+        ruta_guardado = CAPTURAS_DIR / "no_calle" / nombre_archivo
+        img.save(ruta_guardado, "JPEG", quality=90)
+
+        return {
+            "es_calle": False,
+            "label": "otros",
+            "es_bloqueo": False,
+            "confianza": round(confianza_portero, 4),
+            "confianza_portero": round(confianza_portero, 4),
+            "archivo": str(ruta_guardado.relative_to(BASE_DIR)),
+        }
+
+    etiqueta_bloqueo, confianza_bloqueo = _predecir(model_bloqueos, CLASSES_BLOQUEOS, img_t)
+
+    ruta_guardado = CAPTURAS_DIR / etiqueta_bloqueo / nombre_archivo
     img.save(ruta_guardado, "JPEG", quality=90)
 
     return {
-        "label": etiqueta,
-        "es_bloqueo": etiqueta == "bloqueo",
-        "confianza": round(confianza, 4),
+        "es_calle": True,
+        "label": etiqueta_bloqueo,
+        "es_bloqueo": etiqueta_bloqueo == "bloqueo",
+        "confianza": round(confianza_bloqueo, 4),
+        "confianza_portero": round(confianza_portero, 4),
         "archivo": str(ruta_guardado.relative_to(BASE_DIR)),
     }

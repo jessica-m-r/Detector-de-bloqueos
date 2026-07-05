@@ -131,15 +131,18 @@ btnAnalizar.addEventListener("click", async () => {
     const resp = await fetch("/api/predict", { method: "POST", body: formData });
     if (!resp.ok) throw new Error("Error del servidor");
     const data = await resp.json();
-
     mostrarResultado(data);
-
-    if (data.es_bloqueo) {
-      registrarBloqueo(selectedLatLng, data.confianza);
-    } else if (pendingMarker) {
-      map.removeLayer(pendingMarker);
+    if (data.es_calle === false) {
+      if (pendingMarker) {
+         map.removeLayer(pendingMarker);
+         pendingMarker = null;
+       }
+     } else if (data.es_bloqueo) {
+       registrarBloqueo(selectedLatLng, data.confianza);
+     } else if (pendingMarker) {
+       map.removeLayer(pendingMarker);
       pendingMarker = null;
-    }
+   }
 
   } catch (err) {
     resultadoDiv.textContent = "No se pudo conectar con el servidor: " + err.message;
@@ -157,7 +160,14 @@ btnAnalizar.addEventListener("click", async () => {
 });
 
 function mostrarResultado(data) {
-  resultadoDiv.classList.remove("hidden", "ok", "alerta");
+  resultadoDiv.classList.remove("hidden", "ok", "alerta", "aviso");
+ 
+  if (data.es_calle === false) {
+    resultadoDiv.classList.add("aviso");
+    resultadoDiv.innerHTML = `ℹ No parece ser una imagen de una calle<br>Confianza: ${(data.confianza * 100).toFixed(1)}%`;
+    return;
+  }
+ 
   if (data.es_bloqueo) {
     resultadoDiv.classList.add("alerta");
     resultadoDiv.innerHTML = `⚠ <strong>Bloqueo detectado</strong><br>Confianza: ${(data.confianza * 100).toFixed(1)}%`;
