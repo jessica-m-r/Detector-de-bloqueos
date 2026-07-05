@@ -5,10 +5,10 @@ Proyecto pensado para ser instalado en semáforos y detectar calles bloqueadas e
 Es por esto que se creo principalmente un modelo el cual determina si una calle esta bloqueada o no. Ademas de tener un modelo de apoyo para que verifique si es una una calle o es otro tipo de objetos antes de llamar al modelo principal.
 ## Deployado
 Link del deployado
-https://detector-de-bloqueos.onrender.com/
+https://detector-de-bloqueos.onrender.com/  
 Cabe recalcar que el frontend se hizo todo con IA.
 
-### Pruebas
+### Ejecucion de los resultados del frontend
 - **Bloqueo detectado**  
 ![](Imagenes_Readme/bloqueo.png)
 ![](Imagenes_Readme/bloqueo_detectado.png)
@@ -24,6 +24,8 @@ Cabe recalcar que el frontend se hizo todo con IA.
 
 ### Modelo para clasificar entre bloqueo y no bloqueo
 Se utilizaron los siguientes dataset:
+Link del drive donde se encuentran las imagenes: [Dataset con las imagenes utilizadas para el entrenamiento](https://drive.google.com/drive/folders/1gYIUK61sTAbT8dLbmWfeTsuRkXarKJ6G?usp=sharing)
+
 #### BLOQUEOS
 - **Bloqueos**: Imagenes de bloqueos recolectadas usando icrawler, al rededor de 300 imagenes de personas bloqueando, manifestantes recolectadas de internet.  
 Dataset de Roboflow
