@@ -204,7 +204,10 @@ video, canvas {
   background: var(--red-dim);
   border: 1px solid rgba(233, 75, 60, 0.5);
 }
-
+.resultado.aviso {
+  background: rgba(255, 190, 60, 0.12);
+  border: 1px solid rgba(255, 190, 60, 0.4);
+}
 .log h2 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 13px;
