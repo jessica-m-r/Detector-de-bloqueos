@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Detección de Bloqueos</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="panel">
+    <header class="panel-header">
+      <span class="beacon"></span>
+      <div>
+        <h1>Detección de Bloqueos</h1>
+        <p class="subtitle">Marca una ubicación, captura o sube una foto</p>
+      </div>
+    </header>
+
+    <section class="step">
+      <h2><span class="step-num">01</span> Ubicación</h2>
+      <p class="hint">Haz clic en el mapa para marcar el punto a evaluar.</p>
+      <div id="coordsReadout" class="mono readout">— sin ubicación —</div>
+    </section>
+
+    <section class="step">
+      <h2><span class="step-num">02</span> Imagen</h2>
+      <div class="capture-controls">
+        <button id="btnCamara" class="btn btn-secondary">Activar cámara</button>
+        <label class="btn btn-secondary file-label">
+          Subir foto
+          <input id="inputArchivo" type="file" accept="image/*" hidden />
+        </label>
+      </div>
+
+      <video id="video" autoplay playsinline class="hidden"></video>
+      <button id="btnCapturar" class="btn btn-secondary hidden">Tomar foto</button>
+      <canvas id="canvas" class="hidden"></canvas>
+
+      <div id="previewWrap" class="preview-wrap hidden">
+        <img id="preview" alt="Vista previa" />
+        <button id="btnLimpiar" class="btn-link">Quitar imagen</button>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="step-num">03</span> Analizar</h2>
+      <button id="btnAnalizar" class="btn btn-primary" disabled>Analizar imagen</button>
+      <div id="resultado" class="resultado hidden"></div>
+    </section>
+
+    <section class="log">
+      <h2>Bloqueos detectados <span id="contador" class="mono">(0)</span></h2>
+      <ul id="listaBloqueos" class="log-list">
+        <li class="log-empty">Sin registros todavía.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <main id="map"></main>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/script.js"></script>
+</body>
+</html>
